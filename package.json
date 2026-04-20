@@ -1,0 +1,41 @@
+{
+  "name": "trading_app_server",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon index.js",
+    "seed:admin": "node scripts/createAdmin.js",
+    "seed:categories": "node scripts/seedCategories.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devifai-2026/trading_app_server.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/devifai-2026/trading_app_server/issues"
+  },
+  "homepage": "https://github.com/devifai-2026/trading_app_server#readme",
+  "description": "",
+  "dependencies": {
+    "axios": "^1.13.6",
+    "bcryptjs": "^3.0.3",
+    "cloudinary": "^2.5.1",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "firebase-admin": "^13.6.1",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^8.19.3",
+    "multer": "^1.4.5-lts.1",
+    "nodemon": "^3.1.10",
+    "onesignal-node": "^3.4.0",
+    "pdfkit": "^0.18.0",
+    "razorpay": "^2.9.6",
+    "socket.io": "^4.8.3"
+  }
+}
