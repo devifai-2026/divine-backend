@@ -20,9 +20,10 @@ function handleMongoErrors(error, res) {
       .json(new ApiResponse(400, null, `Invalid ID format for ${error.path}`));
   } else {
     // Generic server error
+    console.error("GENERIC ERROR:", error);
     return res
       .status(500)
-      .json(new ApiResponse(500, null, "Internal server error"));
+      .json(new ApiResponse(500, null, error.message || "Internal server error"));
   }
 }
 

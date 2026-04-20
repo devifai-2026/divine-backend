@@ -111,7 +111,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 
 // GET /api/products/:id
 export const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findOne({ _id: req.params.id, isActive: true });
+  const product = await Product.findById(req.params.id);
 
   if (!product) {
     return res.status(404).json(new ApiResponse(404, null, "Product not found"));
@@ -142,11 +142,15 @@ export const createProduct = asyncHandler(async (req, res) => {
   try {
     const data = { ...req.body };
 
-    if (req.file) {
-      const uploaded = await uploadOnCloudinary(req.file.path);
-      if (uploaded) {
-        data.image = uploaded.secure_url;
-        data.images = [uploaded.secure_url];
+    if (req.files && req.files.length > 0) {
+      const uploadedUrls = [];
+      for (const file of req.files) {
+        const uploaded = await uploadOnCloudinary(file.path);
+        if (uploaded) uploadedUrls.push(uploaded.secure_url);
+      }
+      if (uploadedUrls.length > 0) {
+        data.images = uploadedUrls;
+        data.image = uploadedUrls[0];
       }
     }
 
@@ -155,7 +159,11 @@ export const createProduct = asyncHandler(async (req, res) => {
     }
 
     if (data.specifications && typeof data.specifications === "string") {
-      data.specifications = JSON.parse(data.specifications);
+      try {
+        data.specifications = JSON.parse(data.specifications);
+      } catch (e) {
+        return res.status(400).json(new ApiResponse(400, null, "Invalid JSON format for specifications"));
+      }
     }
 
     // FormData sends arrays as "purpose[]" / "rashi[]" keys
@@ -176,11 +184,26 @@ export const updateProduct = asyncHandler(async (req, res) => {
   try {
     const data = { ...req.body };
 
-    if (req.file) {
-      const uploaded = await uploadOnCloudinary(req.file.path);
-      if (uploaded) {
-        data.image = uploaded.secure_url;
+    // For existing images kept by the user, frontend sends "existingImages[]"
+    const existingImages = extractArray(req.body, "existingImages") || [];
+    data.images = [...existingImages];
+
+    if (req.files && req.files.length > 0) {
+      const uploadedUrls = [];
+      for (const file of req.files) {
+        const uploaded = await uploadOnCloudinary(file.path);
+        if (uploaded) uploadedUrls.push(uploaded.secure_url);
       }
+      if (uploadedUrls.length > 0) {
+        data.images = [...data.images, ...uploadedUrls];
+      }
+    }
+    
+    if (data.images && data.images.length > 0) {
+      data.image = data.images[0];
+    } else {
+      data.image = "";
+      data.images = [];
     }
 
     if (data.features && typeof data.features === "string") {
@@ -188,7 +211,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
     }
 
     if (data.specifications && typeof data.specifications === "string") {
-      data.specifications = JSON.parse(data.specifications);
+      try {
+        data.specifications = JSON.parse(data.specifications);
+      } catch (e) {
+        return res.status(400).json(new ApiResponse(400, null, "Invalid JSON format for specifications"));
+      }
     }
 
     // FormData sends arrays as "purpose[]" / "rashi[]" keys
@@ -214,11 +241,7 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
 // DELETE /api/products/:id  (Admin)
 export const deleteProduct = asyncHandler(async (req, res) => {
-  const product = await Product.findByIdAndUpdate(
-    req.params.id,
-    { isActive: false },
-    { new: true }
-  );
+  const product = await Product.findByIdAndDelete(req.params.id);
 
   if (!product) {
     return res.status(404).json(new ApiResponse(404, null, "Product not found"));

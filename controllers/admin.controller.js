@@ -206,9 +206,16 @@ export const bulkProductOps = asyncHandler(async (req, res) => {
     return res.status(400).json(new ApiResponse(400, null, "No product IDs provided"));
   }
 
+  if (action === "delete") {
+    const result = await Product.deleteMany({ _id: { $in: ids } });
+    return res.status(200).json(
+      new ApiResponse(200, { deletedCount: result.deletedCount }, `Products deleted successfully`)
+    );
+  }
+
   let update;
   if (action === "activate") update = { isActive: true };
-  else if (action === "deactivate" || action === "delete") update = { isActive: false };
+  else if (action === "deactivate") update = { isActive: false };
   else {
     return res.status(400).json(new ApiResponse(400, null, "Invalid action"));
   }
