@@ -54,7 +54,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       total,
       shippingAddress,
       paymentMethod,
-      paymentStatus: paymentMethod === "cod" ? "pending" : "pending",
+      paymentStatus: "pending",
     });
 
     // Clear user's cart after order
