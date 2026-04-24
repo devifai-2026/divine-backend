@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary';
 import fs from 'fs';
+import path from 'path';
 
 const uploadOnCloudinary = async (localFilePath) => {
   try {
@@ -27,10 +28,16 @@ const uploadOnCloudinary = async (localFilePath) => {
       api_secret
     });
 
-    console.log("📤 Uploading to Cloudinary from path:", localFilePath);
+    const absolutePath = path.resolve(localFilePath);
+    console.log("📤 Uploading to Cloudinary from path:", absolutePath);
+
+    if (!fs.existsSync(absolutePath)) {
+      console.error("❌ FILE NOT FOUND before upload:", absolutePath);
+      return null;
+    }
 
     // Upload the file on cloudinary with EXPLICIT credentials passed in
-    const response = await cloudinary.uploader.upload(localFilePath, {
+    const response = await cloudinary.uploader.upload(absolutePath, {
       resource_type: "auto",
       cloud_name,
       api_key,
@@ -39,12 +46,13 @@ const uploadOnCloudinary = async (localFilePath) => {
     
     console.log("✅ Cloudinary Response Received");
     // file has been uploaded successfull
-    fs.unlinkSync(localFilePath);
+    fs.unlinkSync(absolutePath);
     return response;
   } catch (error) {
     console.error("CLOUDINARY UPLOAD ERROR:", error);
-    if (fs.existsSync(localFilePath)) {
-      fs.unlinkSync(localFilePath); // remove the locally saved temporary file as the upload operation failed
+    const absolutePath = path.resolve(localFilePath);
+    if (fs.existsSync(absolutePath)) {
+      fs.unlinkSync(absolutePath); // remove the locally saved temporary file as the upload operation failed
     }
     return null;
   }
