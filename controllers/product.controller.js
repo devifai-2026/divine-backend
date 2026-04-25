@@ -51,13 +51,20 @@ export const getProducts = asyncHandler(async (req, res) => {
     if (isFlashDeal === "true") filter.isFlashDeal = true;
 
     // Array fields — support repeated query params or comma-separated
-    if (purpose) {
-      const vals = [].concat(purpose).flatMap((v) => v.split(",").map((s) => s.trim())).filter(Boolean);
-      if (vals.length) filter.purpose = { $in: vals };
+    const purposeVal = purpose || req.query.purposes;
+    if (purposeVal) {
+      const vals = [].concat(purposeVal).flatMap((v) => v.split(",").map((s) => s.trim())).filter(Boolean);
+      if (vals.length) {
+        // Match if ANY of the values match (case-insensitive)
+        filter.purpose = { $in: vals.map(v => new RegExp(`^${v}$`, "i")) };
+      }
     }
-    if (rashi) {
-      const vals = [].concat(rashi).flatMap((v) => v.split(",").map((s) => s.trim())).filter(Boolean);
-      if (vals.length) filter.rashi = { $in: vals };
+    const rashiVal = rashi || req.query.rashis;
+    if (rashiVal) {
+      const vals = [].concat(rashiVal).flatMap((v) => v.split(",").map((s) => s.trim())).filter(Boolean);
+      if (vals.length) {
+        filter.rashi = { $in: vals.map(v => new RegExp(`^${v}$`, "i")) };
+      }
     }
 
     // Enum / string fields
