@@ -3,6 +3,7 @@ import Category from "../models/category.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 // GET /api/subcategories?categoryId=xxx
 export const getSubCategories = asyncHandler(async (req, res) => {
@@ -10,7 +11,7 @@ export const getSubCategories = asyncHandler(async (req, res) => {
   if (req.query.categoryId) filter.categoryId = req.query.categoryId;
 
   const subCategories = await SubCategory.find(filter)
-    .populate("categoryId", "id name")
+    .populate("categoryId", "id name icon")
     .sort({ name: 1 });
 
   return res.status(200).json(new ApiResponse(200, { subCategories }, "SubCategories fetched successfully"));
@@ -26,8 +27,14 @@ export const createSubCategory = asyncHandler(async (req, res) => {
       return res.status(404).json(new ApiResponse(404, null, "Parent category not found"));
     }
 
-    const subCategory = await SubCategory.create({ id, name, categoryId });
-    await subCategory.populate("categoryId", "id name");
+    let image = "";
+    if (req.file?.path) {
+      const uploaded = await uploadOnCloudinary(req.file.path);
+      if (uploaded?.secure_url) image = uploaded.secure_url;
+    }
+
+    const subCategory = await SubCategory.create({ id, name, image, categoryId });
+    await subCategory.populate("categoryId", "id name icon");
 
     return res.status(201).json(new ApiResponse(201, { subCategory }, "SubCategory created successfully"));
   } catch (err) {
@@ -38,11 +45,18 @@ export const createSubCategory = asyncHandler(async (req, res) => {
 // PATCH /api/subcategories/:id  (Admin)
 export const updateSubCategory = asyncHandler(async (req, res) => {
   try {
+    const updates = { ...req.body };
+
+    if (req.file?.path) {
+      const uploaded = await uploadOnCloudinary(req.file.path);
+      if (uploaded?.secure_url) updates.image = uploaded.secure_url;
+    }
+
     const subCategory = await SubCategory.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updates,
       { new: true, runValidators: true }
-    ).populate("categoryId", "id name");
+    ).populate("categoryId", "id name icon");
 
     if (!subCategory) {
       return res.status(404).json(new ApiResponse(404, null, "SubCategory not found"));

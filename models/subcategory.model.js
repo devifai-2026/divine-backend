@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 const subCategorySchema = new mongoose.Schema({
   id: { type: String, required: true, unique: true, trim: true },
   name: { type: String, required: true, trim: true },
+  image: { type: String, default: "" },
   categoryId: { type: mongoose.Schema.Types.ObjectId, ref: "Category", required: true },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
