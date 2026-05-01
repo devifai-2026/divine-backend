@@ -1,8 +1,10 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
 import Order from "../models/order.model.js";
+import User from "../models/user.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { createShiprocketShipment } from "./shipping.controller.js";
 
 const getRazorpayInstance = () =>
   new Razorpay({
@@ -82,6 +84,14 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   order.razorpaySignature = razorpaySignature;
   order.paymentStatus = "completed";
   await order.save({ validateBeforeSave: false });
+
+  // Clear cart only after payment is confirmed
+  await User.findByIdAndUpdate(order.user, { cart: [] });
+
+  // Fire-and-forget: create Shiprocket shipment — don't block the payment response
+  createShiprocketShipment(order._id).catch((err) => {
+    console.error(`[Shiprocket] Failed to create shipment for order ${order.orderId}:`, err?.response?.data || err.message);
+  });
 
   return res.status(200).json(
     new ApiResponse(200, { order }, "Payment verified successfully")

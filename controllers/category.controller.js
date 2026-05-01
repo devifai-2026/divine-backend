@@ -13,14 +13,14 @@ export const getCategories = asyncHandler(async (req, res) => {
 // GET /api/categories/navbar — categories + subcategories in one call (used by frontend navbar)
 export const getNavCategories = asyncHandler(async (_req, res) => {
   const categories = await Category.find({ isActive: true }).sort({ createdAt: 1 }).lean();
-  const subCategories = await SubCategory.find({ isActive: true }).select("_id id name categoryId").lean();
+  const subCategories = await SubCategory.find({ isActive: true }).select("_id id name image categoryId").lean();
 
   // group subcategories by categoryId
   const subMap = {};
   for (const sub of subCategories) {
     const key = sub.categoryId.toString();
     if (!subMap[key]) subMap[key] = [];
-    subMap[key].push({ _id: sub._id, id: sub.id, name: sub.name });
+    subMap[key].push({ _id: sub._id, id: sub.id, name: sub.name, image: sub.image || "" });
   }
 
   const result = categories.map((cat) => {

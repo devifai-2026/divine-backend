@@ -3,6 +3,7 @@ import {
   createOrder,
   getOrders,
   getOrderById,
+  trackOrderByFriendlyId,
   updateOrderStatus,
   cancelOrder,
   getAllOrders,
@@ -17,6 +18,10 @@ router.use(verifyJWT);
 router.post("/", createOrder);
 router.get("/", getOrders);
 router.get("/admin/all", isAdmin, getAllOrders);
+
+// Must be before /:orderId so "track" isn't consumed as a param
+router.get("/track/:friendlyOrderId", trackOrderByFriendlyId);
+
 router.get("/:orderId", getOrderById);
 router.patch("/:orderId/status", isAdmin, updateOrderStatus);
 router.patch("/:orderId/cancel", cancelOrder);

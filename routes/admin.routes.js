@@ -13,6 +13,7 @@ import {
   getAllReviews,
   deleteReview,
 } from "../controllers/admin.controller.js";
+import { getAdminShipmentStatus, adminTrackByAwb, cancelShipment } from "../controllers/shipping.controller.js";
 import {
   listHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide,
   listPurposes, createPurpose, updatePurpose, deletePurpose,
@@ -41,6 +42,10 @@ router.post("/products/bulk", bulkProductOps);
 // Orders
 router.get("/orders", getAllOrders);
 router.patch("/orders/bulk-status", bulkOrderStatus);
+// Literal route must come before /:orderId/track to avoid param collision
+router.get("/orders/track-awb/:awb", adminTrackByAwb);
+router.get("/orders/:orderId/track", getAdminShipmentStatus);
+router.post("/orders/:orderId/cancel-shipment", cancelShipment);
 
 // Users
 router.get("/users", getAllUsers);

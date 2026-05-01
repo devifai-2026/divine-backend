@@ -4,6 +4,7 @@ import User from "../models/user.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
+import { shiprocket } from "../utils/shiprocket.js";
 
 const SHIPPING_THRESHOLD = 2000;
 const SHIPPING_COST = 150;
@@ -21,7 +22,6 @@ export const createOrder = asyncHandler(async (req, res) => {
       return res.status(400).json(new ApiResponse(400, null, "Shipping address and payment method are required"));
     }
 
-    // Validate & build order items from DB
     const orderItems = [];
     let subtotal = 0;
 
@@ -57,9 +57,7 @@ export const createOrder = asyncHandler(async (req, res) => {
       paymentStatus: "pending",
     });
 
-    // Clear user's cart after order
-    await User.findByIdAndUpdate(req.user._id, { cart: [] });
-
+    // Cart is cleared only after payment is verified, not here
     return res.status(201).json(
       new ApiResponse(201, { order }, "Order placed successfully")
     );
@@ -91,7 +89,7 @@ export const getOrders = asyncHandler(async (req, res) => {
   );
 });
 
-// GET /api/orders/:orderId
+// GET /api/orders/:orderId  — includes live Shiprocket tracking when AWB is available
 export const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findOne({
     _id: req.params.orderId,
@@ -102,7 +100,62 @@ export const getOrderById = asyncHandler(async (req, res) => {
     return res.status(404).json(new ApiResponse(404, null, "Order not found"));
   }
 
-  return res.status(200).json(new ApiResponse(200, { order }, "Order fetched successfully"));
+  let liveTracking = null;
+  if (order.awbCode) {
+    try {
+      liveTracking = await shiprocket("GET", `/courier/track/awb/${order.awbCode}`);
+    } catch {
+      // Shiprocket unavailable — local timeline still returned
+    }
+  }
+
+  return res.status(200).json(
+    new ApiResponse(200, { order, liveTracking }, "Order fetched successfully")
+  );
+});
+
+// GET /api/orders/track/:friendlyOrderId  — track by human-readable ORD-xxx string
+export const trackOrderByFriendlyId = asyncHandler(async (req, res) => {
+  const order = await Order.findOne({
+    orderId: req.params.friendlyOrderId,
+    user: req.user._id,
+  });
+
+  if (!order) {
+    return res.status(404).json(new ApiResponse(404, null, "Order not found"));
+  }
+
+  let liveTracking = null;
+  if (order.awbCode) {
+    try {
+      liveTracking = await shiprocket("GET", `/courier/track/awb/${order.awbCode}`);
+    } catch {
+      // local data still returned
+    }
+  }
+
+  return res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        orderId: order.orderId,
+        status: order.status,
+        awbCode: order.awbCode,
+        courierName: order.courierName,
+        edd: order.edd,
+        timeline: order.timeline,
+        shippingAddress: order.shippingAddress,
+        items: order.items,
+        subtotal: order.subtotal,
+        shipping: order.shipping,
+        total: order.total,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+        liveTracking,
+      },
+      "Order tracking fetched"
+    )
+  );
 });
 
 // PATCH /api/orders/:orderId/status  (Admin)
@@ -128,7 +181,6 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   if (status === "Delivered") {
     order.paymentStatus = "completed";
-    // Award karma points (1 point per ₹100)
     const karmaPoints = Math.floor(order.total / 100);
     await User.findByIdAndUpdate(order.user, {
       $inc: { karmaPoints },
