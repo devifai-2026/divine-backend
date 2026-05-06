@@ -30,7 +30,7 @@ const buildOrderQuery = (orderId) =>
 
 // POST /api/shipping/webhook?token=SECRET  — called by Shiprocket on every courier scan
 export const handleShiprocketWebhook = asyncHandler(async (req, res) => {
-  if (req.query.token !== process.env.SHIPROCKET_WEBHOOK_TOKEN) {
+  if (req.headers["x-api-key"] !== process.env.SHIPROCKET_WEBHOOK_TOKEN) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
