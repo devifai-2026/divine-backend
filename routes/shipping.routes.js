@@ -6,6 +6,7 @@ import {
   cancelShipment,
   handleShiprocketWebhook,
   testShiprocketAuth,
+  adminCreateShipment,
   mockShipment,
   mockWebhook,
 } from "../controllers/shipping.controller.js";
@@ -21,6 +22,7 @@ router.get("/serviceability", checkServiceability);
 router.get("/track/:awb", verifyJWT, trackShipment);
 router.get("/order/:orderId", verifyJWT, getShipmentStatus);
 router.post("/cancel/:orderId", verifyJWT, isAdmin, cancelShipment);
+router.post("/create/:orderId", verifyJWT, isAdmin, adminCreateShipment);
 router.get("/test-auth", verifyJWT, isAdmin, testShiprocketAuth);
 router.post("/mock-shipment/:orderId", verifyJWT, isAdmin, mockShipment);
 router.post("/mock-webhook", mockWebhook);

@@ -3,6 +3,7 @@ import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
 import { generateAccessToken, generateRefreshToken } from "../utils/jwt.js";
+import { sendPasswordResetEmail } from "../utils/email.js";
 import crypto from "crypto";
 
 const generateTokens = (userId) => ({
@@ -121,9 +122,16 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   user.passwordResetExpiry = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
   await user.save({ validateBeforeSave: false });
 
-  // TODO: Send email with reset link containing `resetToken`
-  // The reset link format: /reset-password?token=<resetToken>
-  console.log(`Password reset token for ${email}: ${resetToken}`);
+  try {
+    await sendPasswordResetEmail(email, resetToken);
+  } catch (emailErr) {
+    // Rollback token so user can retry
+    user.passwordResetToken = "";
+    user.passwordResetExpiry = undefined;
+    await user.save({ validateBeforeSave: false });
+    console.error("Failed to send reset email:", emailErr.message);
+    return res.status(500).json(new ApiResponse(500, null, "Failed to send reset email. Please try again."));
+  }
 
   return res.status(200).json(
     new ApiResponse(200, null, "If this email exists, a reset link has been sent")

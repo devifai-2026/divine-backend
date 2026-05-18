@@ -212,11 +212,22 @@ export const cancelOrder = asyncHandler(async (req, res) => {
 
 // GET /api/orders/admin/all  (Admin)
 export const getAllOrders = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, status } = req.query;
+  const { page = 1, limit = 15, status, paymentStatus, search, startDate, endDate } = req.query;
   const skip = (Number(page) - 1) * Number(limit);
 
   const filter = {};
   if (status) filter.status = status;
+  if (paymentStatus) filter.paymentStatus = paymentStatus;
+  if (search) filter.orderId = { $regex: search, $options: "i" };
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) filter.createdAt.$gte = new Date(startDate);
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filter.createdAt.$lte = end;
+    }
+  }
 
   const [orders, total] = await Promise.all([
     Order.find(filter)
@@ -235,4 +246,41 @@ export const getAllOrders = asyncHandler(async (req, res) => {
       pages: Math.ceil(total / Number(limit)),
     }, "All orders fetched")
   );
+});
+
+// PATCH /api/orders/admin/bulk-status  (Admin)
+export const bulkUpdateOrderStatus = asyncHandler(async (req, res) => {
+  const { ids, status } = req.body;
+
+  const validStatuses = ["Processing", "Shipped", "Delivered", "Cancelled"];
+  if (!validStatuses.includes(status)) {
+    return res.status(400).json(new ApiResponse(400, null, "Invalid status value"));
+  }
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return res.status(400).json(new ApiResponse(400, null, "Order IDs array is required"));
+  }
+
+  const timelineEntry = { status, description: `Order ${status.toLowerCase()} (bulk update)`, timestamp: new Date() };
+
+  await Order.updateMany(
+    { _id: { $in: ids } },
+    { $set: { status }, $push: { timeline: timelineEntry } }
+  );
+
+  if (status === "Delivered") {
+    const orders = await Order.find({ _id: { $in: ids } }, "user total paymentStatus");
+    await Promise.all(
+      orders.map((o) => {
+        const updates = {};
+        if (o.paymentStatus !== "completed") updates.paymentStatus = "completed";
+        const karma = Math.floor(o.total / 100);
+        if (karma > 0) return User.findByIdAndUpdate(o.user, { $inc: { karmaPoints: karma }, ...updates });
+        if (Object.keys(updates).length) return Order.findByIdAndUpdate(o._id, updates);
+        return Promise.resolve();
+      })
+    );
+  }
+
+  return res.status(200).json(new ApiResponse(200, { updated: ids.length }, `${ids.length} orders updated to ${status}`));
 });

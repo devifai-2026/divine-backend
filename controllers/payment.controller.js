@@ -89,8 +89,29 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(order.user, { cart: [] });
 
   // Fire-and-forget: create Shiprocket shipment — don't block the payment response
-  createShiprocketShipment(order._id).catch((err) => {
-    console.error(`[Shiprocket] Failed to create shipment for order ${order.orderId}:`, err?.response?.data || err.message);
+  const dbOrderId = order._id;
+  const orderFriendlyId = order.orderId;
+  createShiprocketShipment(dbOrderId).catch(async (err) => {
+    const srError = err?.response?.data;
+    const msg = srError?.message || err.message;
+    console.error(`[Shiprocket] ❌ Failed for order ${orderFriendlyId}: ${msg}`);
+    if (msg?.toLowerCase().includes("kyc")) {
+      console.error("[Shiprocket] ⚠️  KYC not completed — complete KYC at https://app.shiprocket.in");
+    }
+    // Save error to order timeline so admin can see it in the panel
+    try {
+      await Order.findByIdAndUpdate(dbOrderId, {
+        $push: {
+          timeline: {
+            status: "Processing",
+            description: `Shiprocket auto-shipment failed: ${String(msg).substring(0, 250)}`,
+            timestamp: new Date(),
+          },
+        },
+      });
+    } catch {
+      // Ignore DB update failure — error is already console-logged
+    }
   });
 
   return res.status(200).json(

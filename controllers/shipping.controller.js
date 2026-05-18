@@ -30,7 +30,7 @@ const buildOrderQuery = (orderId) =>
 
 // POST /api/shipping/webhook?token=SECRET  — called by Shiprocket on every courier scan
 export const handleShiprocketWebhook = asyncHandler(async (req, res) => {
-  if (req.headers["x-api-key"] !== process.env.SHIPROCKET_WEBHOOK_TOKEN) {
+  if (req.query.token !== process.env.SHIPROCKET_WEBHOOK_TOKEN) {
     return res.status(401).json({ message: "Unauthorized" });
   }
 
@@ -90,6 +90,42 @@ export const handleShiprocketWebhook = asyncHandler(async (req, res) => {
 export const createShiprocketShipment = async (orderId) => {
   const order = await Order.findById(orderId);
   if (!order) throw new Error(`Order not found: ${orderId}`);
+
+  // Partial success recovery: Shiprocket order already created but AWB not yet assigned
+  if (order.shiprocketOrderId && order.shipmentId && !order.awbCode) {
+    console.log(`[Shiprocket] Order ${order.orderId} already exists (shipment ${order.shipmentId}), attempting AWB assignment`);
+    try {
+      const assignResult = await shiprocket("POST", "/courier/assign/awb", {
+        shipment_id: [order.shipmentId],
+      });
+      const awb =
+        assignResult?.awb_code ||
+        assignResult?.response?.data?.awb_code ||
+        assignResult?.data?.awb_code;
+      const courier =
+        assignResult?.courier_name ||
+        assignResult?.response?.data?.courier_name ||
+        assignResult?.data?.courier_name;
+      if (awb) {
+        order.awbCode = awb;
+        if (courier) order.courierName = courier;
+        console.log(`[Shiprocket] AWB assigned on retry: ${awb} via ${courier}`);
+        await order.save({ validateBeforeSave: false });
+      } else {
+        console.warn(`[Shiprocket] AWB assignment returned no AWB for shipment ${order.shipmentId}`);
+      }
+    } catch (err) {
+      console.error(`[Shiprocket] AWB re-assign failed for shipment ${order.shipmentId}:`, err?.response?.data || err.message);
+      throw err;
+    }
+    return;
+  }
+
+  // Already fully created — nothing to do
+  if (order.shiprocketOrderId && order.awbCode) {
+    console.log(`[Shiprocket] Order ${order.orderId} already has AWB ${order.awbCode}, skipping`);
+    return;
+  }
 
   const addr = order.shippingAddress;
 
@@ -395,11 +431,24 @@ export const checkServiceability = asyncHandler(async (req, res) => {
 export const testShiprocketAuth = asyncHandler(async (req, res) => {
   try {
     const data = await shiprocket("GET", "/settings/company/pickup");
+    const locations = data?.data ?? data;
+    const configuredLocation = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
+    const locationNames = Array.isArray(locations) ? locations.map((l) => l.pickup_location || l.name) : [];
+    const isValid = locationNames.includes(configuredLocation);
+
     return res.status(200).json(
       new ApiResponse(
         200,
-        { message: "Shiprocket auth working", pickup_locations: data?.data ?? data },
-        "Shiprocket connected"
+        {
+          shiprocketEmail: process.env.SHIPROCKET_EMAIL,
+          configuredPickupLocation: configuredLocation,
+          pickupLocationValid: isValid,
+          availablePickupLocations: locationNames,
+          raw: locations,
+        },
+        isValid
+          ? "Shiprocket connected — pickup location OK"
+          : `⚠️  Pickup location "${configuredLocation}" not found in Shiprocket account — update SHIPROCKET_PICKUP_LOCATION in .env`
       )
     );
   } catch (err) {
@@ -411,6 +460,42 @@ export const testShiprocketAuth = asyncHandler(async (req, res) => {
       )
     );
   }
+});
+
+// POST /api/shipping/create/:orderId  — Admin manually triggers Shiprocket shipment creation (retry)
+export const adminCreateShipment = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.orderId);
+  if (!order) return res.status(404).json(new ApiResponse(404, null, "Order not found"));
+
+  if (order.paymentStatus !== "completed") {
+    return res.status(400).json(new ApiResponse(400, null, "Payment not completed — cannot create shipment"));
+  }
+
+  if (order.awbCode) {
+    return res.status(400).json(
+      new ApiResponse(400, { awbCode: order.awbCode, courierName: order.courierName }, "Shipment already created for this order")
+    );
+  }
+
+  try {
+    await createShiprocketShipment(order._id);
+  } catch (err) {
+    const srMsg = err?.response?.data?.message || err?.response?.data?.errors || err.message || "Unknown Shiprocket error";
+    console.error(`[Shiprocket] Admin create failed for order ${order.orderId}:`, srMsg);
+    return res.status(502).json(
+      new ApiResponse(502, { shiprocketError: srMsg }, `Shiprocket shipment creation failed: ${srMsg}`)
+    );
+  }
+
+  const updated = await Order.findById(order._id);
+  return res.status(200).json(
+    new ApiResponse(200, {
+      orderId: updated.orderId,
+      awbCode: updated.awbCode,
+      courierName: updated.courierName,
+      shipmentId: updated.shipmentId,
+    }, updated.awbCode ? "Shipment created successfully" : "Shipment created but AWB not assigned yet — check Shiprocket dashboard")
+  );
 });
 
 // POST /api/shipping/mock-shipment/:orderId  — DEV/TEST only, bypasses Shiprocket
