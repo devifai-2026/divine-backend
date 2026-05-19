@@ -55,7 +55,7 @@ app.get("/health", (_req, res) => {
 // Home
 app.get("/", (_req, res) => {
   res.json({
-    message: "Welcome to Divine Shop API",
+    message: "Welcome to Crystaura API",
     version: "1.0.0",
     status: "active",
     timestamp: new Date().toISOString(),

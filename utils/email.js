@@ -13,17 +13,17 @@ export async function sendPasswordResetEmail(toEmail, resetToken) {
   const resetLink = `${frontendUrl}?token=${resetToken}`;
 
   await transporter.sendMail({
-    from: `"Divine Shop" <${process.env.EMAIL_USER}>`,
+    from: `"Crystaura" <${process.env.EMAIL_USER}>`,
     to: toEmail,
-    subject: "Reset Your Divine Shop Password",
+    subject: "Reset Your Crystaura Password",
     html: `
       <div style="font-family: Georgia, serif; max-width: 520px; margin: 0 auto; padding: 40px 32px; background: #fff9f2; border-radius: 16px; border: 1px solid #f0e0cc;">
         <div style="text-align: center; margin-bottom: 32px;">
-          <h1 style="color: #b45309; font-size: 28px; margin: 0;">🕉 Divine Shop</h1>
+          <h1 style="color: #b45309; font-size: 28px; margin: 0;">🕉 Crystaura</h1>
         </div>
         <h2 style="color: #1a1a1a; font-size: 22px; margin-bottom: 8px;">Reset Your Password</h2>
         <p style="color: #555; line-height: 1.6; margin-bottom: 24px;">
-          We received a request to reset the password for your Divine Shop account (<strong>${toEmail}</strong>).
+          We received a request to reset the password for your Crystaura account (<strong>${toEmail}</strong>).
           Click the button below to set a new password. This link expires in <strong>30 minutes</strong>.
         </p>
         <div style="text-align: center; margin: 32px 0;">
@@ -36,7 +36,7 @@ export async function sendPasswordResetEmail(toEmail, resetToken) {
         </p>
         <hr style="border: none; border-top: 1px solid #f0e0cc; margin: 32px 0;" />
         <p style="color: #bbb; font-size: 12px; text-align: center;">
-          © Divine Shop — Sacred Products for the Soul
+          © Crystaura — Sacred Products for the Soul
         </p>
       </div>
     `,
