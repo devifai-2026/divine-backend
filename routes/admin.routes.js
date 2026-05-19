@@ -14,6 +14,7 @@ import {
   deleteReview,
 } from "../controllers/admin.controller.js";
 import { getAdminShipmentStatus, adminTrackByAwb, cancelShipment } from "../controllers/shipping.controller.js";
+import { getSettings, updateShiprocketSettings, updateShippingSettings } from "../controllers/settings.controller.js";
 import {
   listHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide,
   listPurposes, createPurpose, updatePurpose, deletePurpose,
@@ -92,5 +93,10 @@ router.get("/homepage/featured-bundles", listFeaturedBundles);
 router.post("/homepage/featured-bundles", createFeaturedBundle);
 router.patch("/homepage/featured-bundles/:id", updateFeaturedBundle);
 router.delete("/homepage/featured-bundles/:id", deleteFeaturedBundle);
+
+// Settings
+router.get("/settings", getSettings);
+router.patch("/settings/shiprocket", updateShiprocketSettings);
+router.patch("/settings/shipping", updateShippingSettings);
 
 export default router;

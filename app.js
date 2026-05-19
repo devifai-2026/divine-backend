@@ -13,6 +13,7 @@ import adminRoutes from "./routes/admin.routes.js";
 import subCategoryRoutes from "./routes/subcategory.routes.js";
 import homepageRoutes from "./routes/homepage.routes.js";
 import shippingRoutes from "./routes/shipping.routes.js";
+import { getPublicShipping } from "./controllers/settings.controller.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -44,6 +45,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/subcategories", subCategoryRoutes);
 app.use("/api/homepage", homepageRoutes);
 app.use("/api/shipping", shippingRoutes);
+app.get("/api/settings/shipping", getPublicShipping);
 
 // Health check
 app.get("/health", (_req, res) => {

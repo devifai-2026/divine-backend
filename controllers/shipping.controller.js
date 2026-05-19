@@ -1,4 +1,4 @@
-import { shiprocket } from "../utils/shiprocket.js";
+import { shiprocket, getShiprocketPickupLocation } from "../utils/shiprocket.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
@@ -132,7 +132,7 @@ export const createShiprocketShipment = async (orderId) => {
   const payload = {
     order_id: order.orderId,
     order_date: order.createdAt.toISOString().split("T")[0],
-    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
+    pickup_location: await getShiprocketPickupLocation(),
     billing_customer_name: addr.firstName,
     billing_last_name: addr.lastName,
     billing_address: addr.address,
@@ -431,10 +431,13 @@ export const checkServiceability = asyncHandler(async (req, res) => {
 export const testShiprocketAuth = asyncHandler(async (req, res) => {
   try {
     const data = await shiprocket("GET", "/settings/company/pickup");
-    const locations = data?.data ?? data;
-    const configuredLocation = process.env.SHIPROCKET_PICKUP_LOCATION || "Primary";
-    const locationNames = Array.isArray(locations) ? locations.map((l) => l.pickup_location || l.name) : [];
-    const isValid = locationNames.includes(configuredLocation);
+    const configuredLocation = await getShiprocketPickupLocation();
+    // Shiprocket returns { shipping_address: [...] }
+    const locationList = data?.shipping_address ?? data?.data ?? [];
+    const locationNames = Array.isArray(locationList)
+      ? locationList.map((l) => l.pickup_location || l.name).filter(Boolean)
+      : [];
+    const isValid = locationNames.length === 0 || locationNames.includes(configuredLocation);
 
     return res.status(200).json(
       new ApiResponse(
@@ -444,7 +447,6 @@ export const testShiprocketAuth = asyncHandler(async (req, res) => {
           configuredPickupLocation: configuredLocation,
           pickupLocationValid: isValid,
           availablePickupLocations: locationNames,
-          raw: locations,
         },
         isValid
           ? "Shiprocket connected — pickup location OK"

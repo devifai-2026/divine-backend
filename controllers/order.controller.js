@@ -1,13 +1,20 @@
 import Order from "../models/order.model.js";
 import Product from "../models/product.model.js";
 import User from "../models/user.model.js";
+import Setting from "../models/setting.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
 import { shiprocket } from "../utils/shiprocket.js";
 
-const SHIPPING_THRESHOLD = 2000;
-const SHIPPING_COST = 150;
+const getShippingConfig = async () => {
+  const s = await Setting.findOne().lean();
+  return {
+    freeThreshold: s?.shipping?.freeThreshold ?? 2000,
+    charge:        s?.shipping?.charge        ?? 150,
+    gstPercent:    s?.shipping?.gstPercent    ?? 18,
+  };
+};
 
 // POST /api/orders
 export const createOrder = asyncHandler(async (req, res) => {
@@ -43,14 +50,18 @@ export const createOrder = asyncHandler(async (req, res) => {
       subtotal += product.price * Number(item.quantity);
     }
 
-    const shipping = subtotal >= SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-    const total = subtotal + shipping;
+    const { freeThreshold, charge, gstPercent } = await getShippingConfig();
+    const shipping = subtotal >= freeThreshold ? 0 : charge;
+    const gst = Math.round(subtotal * gstPercent / 100);
+    const total = subtotal + shipping + gst;
 
     const order = await Order.create({
       user: req.user._id,
       items: orderItems,
       subtotal,
       shipping,
+      gst,
+      gstPercent,
       total,
       shippingAddress,
       paymentMethod,
