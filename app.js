@@ -19,16 +19,9 @@ const app = express();
 const server = http.createServer(app);
 
 // CORS
-const corsOptions = {
-  origin: function (origin, callback) {
-    callback(null, origin);
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-};
 
-app.use(cors(corsOptions));
+
+app.use(cors());
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(express.static("public"));
