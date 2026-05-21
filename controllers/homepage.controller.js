@@ -18,8 +18,6 @@ const PRODUCT_PROJECT = {
 
 // GET /api/homepage
 export const getHomepage = asyncHandler(async (req, res) => {
-  const now = new Date();
-
   const [
     heroSlides,
     flashDeals,
@@ -34,11 +32,7 @@ export const getHomepage = asyncHandler(async (req, res) => {
     curatedCategories,
   ] = await Promise.all([
     HeroSlide.find({ isActive: true }).sort({ order: 1 }),
-    Product.find({
-      isActive: true,
-      isFlashDeal: true,
-      $or: [{ flashDealEndsAt: { $gt: now } }, { flashDealEndsAt: null }, { flashDealEndsAt: { $exists: false } }],
-    })
+    Product.find({ isActive: true, isFlashDeal: true })
       .select("name image price originalPrice flashDealDiscount flashDealEndsAt stockStatus stock rating reviewCount benefit")
       .limit(6),
     // Divine Collections: 6 random active products, changes on every load

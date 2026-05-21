@@ -5,6 +5,7 @@ import Collection from "../models/collection.model.js";
 import Festival from "../models/festival.model.js";
 import BlogPost from "../models/blogPost.model.js";
 import FeaturedBundle from "../models/featuredBundle.model.js";
+import Product from "../models/product.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
@@ -90,3 +91,24 @@ export const {
   update: updateFeaturedBundle,
   remove: deleteFeaturedBundle,
 } = makeCRUD(FeaturedBundle, "Featured Bundle");
+
+// ─── Flash Deals ──────────────────────────────────────────────────────────────
+export const listFlashDeals = asyncHandler(async (req, res) => {
+  const products = await Product.find({ isFlashDeal: true })
+    .select("name image price originalPrice flashDealDiscount flashDealEndsAt isFlashDeal isActive stockStatus")
+    .sort({ createdAt: -1 });
+  res.json(new ApiResponse(200, products, "Flash deals fetched"));
+});
+
+export const updateFlashDeal = asyncHandler(async (req, res) => {
+  const { flashDealDiscount, flashDealEndsAt, isFlashDeal } = req.body;
+  const update = {};
+  if (flashDealDiscount !== undefined) update.flashDealDiscount = Number(flashDealDiscount);
+  if (flashDealEndsAt !== undefined) update.flashDealEndsAt = flashDealEndsAt ? new Date(flashDealEndsAt) : null;
+  if (isFlashDeal !== undefined) update.isFlashDeal = isFlashDeal;
+
+  const product = await Product.findByIdAndUpdate(req.params.id, update, { new: true })
+    .select("name image price originalPrice flashDealDiscount flashDealEndsAt isFlashDeal isActive stockStatus");
+  if (!product) return res.status(404).json(new ApiResponse(404, null, "Product not found"));
+  res.json(new ApiResponse(200, product, "Flash deal updated"));
+});

@@ -23,6 +23,7 @@ import {
   listFestivals, createFestival, updateFestival, deleteFestival,
   listBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost,
   listFeaturedBundles, createFeaturedBundle, updateFeaturedBundle, deleteFeaturedBundle,
+  listFlashDeals, updateFlashDeal,
 } from "../controllers/adminHomepage.controller.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
 import isAdmin from "../middlewares/admin.middleware.js";
@@ -93,6 +94,10 @@ router.get("/homepage/featured-bundles", listFeaturedBundles);
 router.post("/homepage/featured-bundles", createFeaturedBundle);
 router.patch("/homepage/featured-bundles/:id", updateFeaturedBundle);
 router.delete("/homepage/featured-bundles/:id", deleteFeaturedBundle);
+
+// Flash Deals
+router.get("/homepage/flash-deals", listFlashDeals);
+router.patch("/homepage/flash-deals/:id", updateFlashDeal);
 
 // Settings
 router.get("/settings", getSettings);
