@@ -4,6 +4,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "dev": "nodemon index.js",
     "seed:admin": "node scripts/createAdmin.js",
     "seed:categories": "node scripts/seedCategories.js",
