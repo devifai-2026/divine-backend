@@ -9,7 +9,7 @@ const transporter = nodemailer.createTransport({
 });
 
 export async function sendPasswordResetEmail(toEmail, resetToken) {
-  const frontendUrl = process.env.FRONTEND_URL || "https://servicekart.yepkart.com";
+  const frontendUrl = process.env.FRONTEND_URL || "https://shop.crystaura.in";
   const resetLink = `${frontendUrl}?token=${resetToken}`;
 
   await transporter.sendMail({
