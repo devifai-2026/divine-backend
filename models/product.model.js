@@ -37,6 +37,7 @@ const productSchema = new mongoose.Schema({
   rashi: [{ type: String }],
   collection: { type: String, default: "" },
   description: { type: String, required: true },
+  howToUse: { type: String, default: '' },
   features: [{ type: String }],
   specifications: { type: Map, of: String, default: {} },
   stockStatus: {
