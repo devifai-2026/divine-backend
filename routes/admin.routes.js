@@ -3,6 +3,7 @@ import {
   getStats,
   getAnalytics,
   getAllProducts,
+  exportProducts,
   bulkProductOps,
   getAllOrders,
   bulkOrderStatus,
@@ -39,6 +40,7 @@ router.get("/analytics", getAnalytics);
 
 // Products
 router.get("/products", getAllProducts);
+router.get("/products/export", exportProducts);
 router.post("/products/bulk", bulkProductOps);
 
 // Orders

@@ -169,13 +169,35 @@ export const getAnalytics = asyncHandler(async (req, res) => {
 
 // ─── PRODUCTS ─────────────────────────────────────────────────────────────────
 
-// GET /api/admin/products
-export const getAllProducts = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 20, search, category, status } = req.query;
-  const skip = (Number(page) - 1) * Number(limit);
-
+function buildProductFilter({ search, searchBy = "all", category, status }) {
   const filter = {};
-  if (search) filter.name = { $regex: search, $options: "i" };
+
+  if (search && search.trim()) {
+    const s = search.trim();
+    if (searchBy === "name") {
+      filter.name = { $regex: s, $options: "i" };
+    } else if (searchBy === "hsn") {
+      filter.hsnCode = { $regex: s, $options: "i" };
+    } else if (searchBy === "price") {
+      const num = Number(s);
+      if (!isNaN(num)) filter.price = num;
+    } else if (searchBy === "gst") {
+      const num = Number(s);
+      if (!isNaN(num)) filter.gstRate = num;
+    } else {
+      const orClauses = [
+        { name: { $regex: s, $options: "i" } },
+        { hsnCode: { $regex: s, $options: "i" } },
+        { category: { $regex: s, $options: "i" } },
+      ];
+      const num = Number(s);
+      if (!isNaN(num)) {
+        orClauses.push({ price: num }, { gstRate: num });
+      }
+      filter.$or = orClauses;
+    }
+  }
+
   if (category) filter.category = { $regex: category, $options: "i" };
   if (status === "active") filter.isActive = true;
   else if (status === "inactive") filter.isActive = false;
@@ -183,6 +205,16 @@ export const getAllProducts = asyncHandler(async (req, res) => {
     filter.isActive = true;
     filter.stockStatus = { $in: ["Low Stock", "Out of Stock"] };
   }
+
+  return filter;
+}
+
+// GET /api/admin/products
+export const getAllProducts = asyncHandler(async (req, res) => {
+  const { page = 1, limit = 20, search, searchBy, category, status } = req.query;
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const filter = buildProductFilter({ search, searchBy, category, status });
 
   const [products, total] = await Promise.all([
     Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
@@ -196,6 +228,20 @@ export const getAllProducts = asyncHandler(async (req, res) => {
       page: Number(page),
       pages: Math.ceil(total / Number(limit)),
     }, "Products fetched")
+  );
+});
+
+// GET /api/admin/products/export
+export const exportProducts = asyncHandler(async (req, res) => {
+  const { search, searchBy, category, status } = req.query;
+  const filter = buildProductFilter({ search, searchBy, category, status });
+
+  const products = await Product.find(filter)
+    .sort({ createdAt: -1 })
+    .select("name category subCategory price originalPrice gstRate hsnCode stock stockStatus isActive isEnergized isTrending isBestseller isFreshArrival material size collection createdAt");
+
+  return res.status(200).json(
+    new ApiResponse(200, { products }, "Export data fetched")
   );
 });
 

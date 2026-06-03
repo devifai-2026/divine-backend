@@ -13,6 +13,8 @@ const productSchema = new mongoose.Schema({
   subCategory: { type: String, default: "", trim: true },
   price: { type: Number, required: true, min: 0 },
   originalPrice: { type: Number },
+  gstRate: { type: Number, default: 0, min: 0, max: 100 },
+  hsnCode: { type: String, default: '', trim: true },
   rating: { type: Number, default: 0, min: 0, max: 5 },
   reviewCount: { type: Number, default: 0 },
   reviews: [reviewSchema],
