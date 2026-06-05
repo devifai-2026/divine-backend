@@ -5,6 +5,30 @@ import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
+// GET /api/subcategories/admin?categoryId=xxx  (Admin) — all including inactive
+export const getAllSubCategoriesAdmin = asyncHandler(async (req, res) => {
+  const filter = {};
+  if (req.query.categoryId) filter.categoryId = req.query.categoryId;
+
+  const subCategories = await SubCategory.find(filter)
+    .populate("categoryId", "id name icon")
+    .sort({ name: 1 });
+
+  return res.status(200).json(new ApiResponse(200, { subCategories }, "All sub-categories fetched successfully"));
+});
+
+// PATCH /api/subcategories/:id/toggle  (Admin) — flip isActive
+export const toggleSubCategoryStatus = asyncHandler(async (req, res) => {
+  const subCategory = await SubCategory.findById(req.params.id);
+  if (!subCategory) {
+    return res.status(404).json(new ApiResponse(404, null, "SubCategory not found"));
+  }
+  subCategory.isActive = !subCategory.isActive;
+  await subCategory.save();
+  const msg = subCategory.isActive ? "Sub-category activated successfully" : "Sub-category deactivated successfully";
+  return res.status(200).json(new ApiResponse(200, { subCategory }, msg));
+});
+
 // GET /api/subcategories?categoryId=xxx
 export const getSubCategories = asyncHandler(async (req, res) => {
   const filter = { isActive: true };

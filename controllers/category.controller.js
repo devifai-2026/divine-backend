@@ -4,6 +4,24 @@ import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
 
+// GET /api/categories/admin  (Admin) — all categories including inactive
+export const getAllCategoriesAdmin = asyncHandler(async (req, res) => {
+  const categories = await Category.find({}).sort({ name: 1 });
+  return res.status(200).json(new ApiResponse(200, { categories }, "All categories fetched successfully"));
+});
+
+// PATCH /api/categories/:id/toggle  (Admin) — flip isActive
+export const toggleCategoryStatus = asyncHandler(async (req, res) => {
+  const category = await Category.findById(req.params.id);
+  if (!category) {
+    return res.status(404).json(new ApiResponse(404, null, "Category not found"));
+  }
+  category.isActive = !category.isActive;
+  await category.save();
+  const msg = category.isActive ? "Category activated successfully" : "Category deactivated successfully";
+  return res.status(200).json(new ApiResponse(200, { category }, msg));
+});
+
 // GET /api/categories
 export const getCategories = asyncHandler(async (req, res) => {
   const categories = await Category.find({ isActive: true }).sort({ name: 1 });
