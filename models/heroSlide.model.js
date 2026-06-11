@@ -5,6 +5,7 @@ const heroSlideSchema = new mongoose.Schema({
   subtitle: { type: String, default: "", trim: true },
   tagline: { type: String, default: "", trim: true },
   image: { type: String, required: true },
+  mobileImage: { type: String, default: '' },
   order: { type: Number, default: 0 },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true });
