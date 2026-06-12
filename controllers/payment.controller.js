@@ -5,6 +5,7 @@ import User from "../models/user.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { createShiprocketShipment } from "./shipping.controller.js";
+import { sendMetaEvent } from "../utils/metaCapi.js";
 
 const getRazorpayInstance = () =>
   new Razorpay({
@@ -87,6 +88,23 @@ export const verifyPayment = asyncHandler(async (req, res) => {
 
   // Clear cart only after payment is confirmed
   await User.findByIdAndUpdate(order.user, { cart: [] });
+
+  // Fire-and-forget: Meta Conversions API Purchase event
+  sendMetaEvent({
+    eventName: "Purchase",
+    eventId: order.orderId,
+    value: order.total,
+    currency: "INR",
+    contents: order.items.map((i) => ({
+      id: String(i.product),
+      quantity: i.quantity,
+      item_price: i.price,
+    })),
+    numItems: order.items.reduce((sum, i) => sum + i.quantity, 0),
+    user: req.user,
+    shippingAddress: order.shippingAddress,
+    req,
+  }).catch(() => {});
 
   // Fire-and-forget: create Shiprocket shipment — don't block the payment response
   const dbOrderId = order._id;
