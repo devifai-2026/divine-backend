@@ -25,6 +25,7 @@ const allowedOrigins = [
   "https://crystaura.in",
   "http://localhost:3000",
   "http://localhost:5174",
+  "https://www.crystaura.in"
 ];
 
 const corsOptions = {
