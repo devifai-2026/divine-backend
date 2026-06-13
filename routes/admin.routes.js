@@ -26,6 +26,8 @@ import {
   listFeaturedBundles, createFeaturedBundle, updateFeaturedBundle, deleteFeaturedBundle,
   listFlashDeals, updateFlashDeal,
 } from "../controllers/adminHomepage.controller.js";
+import { uploadAdminImage } from "../controllers/admin.controller.js";
+import { upload } from "../middlewares/multer.middleware.js";
 import verifyJWT from "../middlewares/auth.middleware.js";
 import isAdmin from "../middlewares/admin.middleware.js";
 
@@ -60,6 +62,9 @@ router.delete("/users/:id", deleteUser);
 // Reviews
 router.get("/reviews", getAllReviews);
 router.delete("/reviews/:productId/:reviewId", deleteReview);
+
+// Image Upload
+router.post("/upload-image", upload.single("image"), uploadAdminImage);
 
 // ─── Homepage Management ──────────────────────────────────────────────────────
 router.get("/homepage/hero-slides", listHeroSlides);

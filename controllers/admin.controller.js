@@ -1,10 +1,11 @@
-import Product from "../models/product.model.js";
+﻿import Product from "../models/product.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
-// ─── STATS ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // GET /api/admin/stats
 export const getStats = asyncHandler(async (req, res) => {
@@ -78,7 +79,7 @@ export const getStats = asyncHandler(async (req, res) => {
   );
 });
 
-// ─── ANALYTICS ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ ANALYTICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // GET /api/admin/analytics?period=7d|30d|90d
 export const getAnalytics = asyncHandler(async (req, res) => {
@@ -167,7 +168,7 @@ export const getAnalytics = asyncHandler(async (req, res) => {
   );
 });
 
-// ─── PRODUCTS ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ PRODUCTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function buildProductFilter({ search, searchBy = "all", category, status }) {
   const filter = {};
@@ -245,7 +246,7 @@ export const exportProducts = asyncHandler(async (req, res) => {
   );
 });
 
-// POST /api/admin/products/bulk  — bulk operations
+// POST /api/admin/products/bulk  â€” bulk operations
 export const bulkProductOps = asyncHandler(async (req, res) => {
   const { action, ids } = req.body;
   if (!ids?.length) {
@@ -272,7 +273,7 @@ export const bulkProductOps = asyncHandler(async (req, res) => {
   );
 });
 
-// ─── ORDERS ───────────────────────────────────────────────────────────────────
+// â”€â”€â”€ ORDERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // GET /api/admin/orders
 export const getAllOrders = asyncHandler(async (req, res) => {
@@ -300,7 +301,7 @@ export const getAllOrders = asyncHandler(async (req, res) => {
     }
   }
 
-  // Search by orderId or customer name/email — needs populate after filter
+  // Search by orderId or customer name/email â€” needs populate after filter
   let query = Order.find(filter).populate("user", "name email avatar");
   if (search) {
     // Filter by orderId pattern first, then in memory for user fields
@@ -368,7 +369,7 @@ export const bulkOrderStatus = asyncHandler(async (req, res) => {
   );
 });
 
-// ─── USERS ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ USERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // GET /api/admin/users
 export const getAllUsers = asyncHandler(async (req, res) => {
@@ -474,7 +475,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, null, "User deleted"));
 });
 
-// ─── REVIEWS ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ REVIEWS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 // GET /api/admin/reviews
 export const getAllReviews = asyncHandler(async (req, res) => {
@@ -538,4 +539,13 @@ export const deleteReview = asyncHandler(async (req, res) => {
   await product.save({ validateBeforeSave: false });
 
   return res.status(200).json(new ApiResponse(200, null, "Review deleted"));
+});
+
+
+// ─── IMAGE UPLOAD ─────────────────────────────────────────────────────────────
+export const uploadAdminImage = asyncHandler(async (req, res) => {
+  if (!req.file) return res.status(400).json(new ApiResponse(400, null, "No image file provided"));
+  const result = await uploadOnCloudinary(req.file.path);
+  if (!result) return res.status(500).json(new ApiResponse(500, null, "Cloudinary upload failed"));
+  return res.status(200).json(new ApiResponse(200, { url: result.secure_url }, "Image uploaded"));
 });
