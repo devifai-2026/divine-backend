@@ -43,11 +43,11 @@ export const getHomepage = asyncHandler(async (req, res) => {
     ]),
     Purpose.find({ isActive: true }).sort({ order: 1 }),
     Rashi.find({ isActive: true }).sort({ order: 1 }),
-    // Fresh Arrivals: latest 4 added to the DB, no flag required
-    Product.find({ isActive: true })
-      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller")
+    // Fresh Arrivals: products tagged isFreshArrival from admin Premium Configuration
+    Product.find({ isActive: true, isFreshArrival: true })
+      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller isFreshArrival")
       .sort({ createdAt: -1 })
-      .limit(4),
+      .limit(8),
     // Trending Artifacts: prefer isTrending-flagged products, fall back to top-rated
     Product.aggregate([
       { $match: { isActive: true } },
