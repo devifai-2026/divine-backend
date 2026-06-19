@@ -7,6 +7,11 @@ const reviewSchema = new mongoose.Schema({
   comment: { type: String, required: true },
 }, { timestamps: true });
 
+const crystalSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  benefit: { type: String, default: '', trim: true },
+}, { _id: false });
+
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
   category: { type: String, required: true, trim: true },
@@ -49,6 +54,7 @@ const productSchema = new mongoose.Schema({
   },
   stock: { type: Number, default: 0, min: 0 },
   isActive: { type: Boolean, default: true },
+  crystals: [crystalSchema],
 }, { timestamps: true });
 
 productSchema.index({ name: "text", description: "text", category: "text" });

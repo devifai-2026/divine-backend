@@ -8,7 +8,7 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 const extractArray = (body, key) => {
   const val = body[key] ?? body[`${key}[]`];
   if (val == null) return undefined;
-  return [].concat(val);
+  return [].concat(val).filter(Boolean);
 };
 
 // GET /api/products
@@ -167,7 +167,11 @@ export const createProduct = asyncHandler(async (req, res) => {
 
     if (data.specifications && typeof data.specifications === "string") {
       try {
-        data.specifications = JSON.parse(data.specifications);
+        const parsed = JSON.parse(data.specifications);
+        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+          return res.status(400).json(new ApiResponse(400, null, "Specifications must be a JSON object e.g. {\"Weight\": \"450g\"}"));
+        }
+        data.specifications = parsed;
       } catch (e) {
         return res.status(400).json(new ApiResponse(400, null, "Invalid JSON format for specifications"));
       }
@@ -178,6 +182,10 @@ export const createProduct = asyncHandler(async (req, res) => {
     if (purposeArr !== undefined) { data.purpose = purposeArr; delete data["purpose[]"]; }
     const rashiArr = extractArray(req.body, "rashi");
     if (rashiArr !== undefined) { data.rashi = rashiArr; delete data["rashi[]"]; }
+
+    if (data.crystals && typeof data.crystals === "string") {
+      try { data.crystals = JSON.parse(data.crystals); } catch { data.crystals = []; }
+    }
 
     const product = await Product.create(data);
     return res.status(201).json(new ApiResponse(201, { product }, "Product created successfully"));
@@ -219,7 +227,11 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
     if (data.specifications && typeof data.specifications === "string") {
       try {
-        data.specifications = JSON.parse(data.specifications);
+        const parsed = JSON.parse(data.specifications);
+        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+          return res.status(400).json(new ApiResponse(400, null, "Specifications must be a JSON object e.g. {\"Weight\": \"450g\"}"));
+        }
+        data.specifications = parsed;
       } catch (e) {
         return res.status(400).json(new ApiResponse(400, null, "Invalid JSON format for specifications"));
       }
@@ -230,6 +242,10 @@ export const updateProduct = asyncHandler(async (req, res) => {
     if (purposeArr !== undefined) { data.purpose = purposeArr; delete data["purpose[]"]; }
     const rashiArr = extractArray(req.body, "rashi");
     if (rashiArr !== undefined) { data.rashi = rashiArr; delete data["rashi[]"]; }
+
+    if (data.crystals && typeof data.crystals === "string") {
+      try { data.crystals = JSON.parse(data.crystals); } catch { data.crystals = []; }
+    }
 
     const product = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,

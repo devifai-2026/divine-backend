@@ -129,6 +129,9 @@ export const createShiprocketShipment = async (orderId) => {
 
   const addr = order.shippingAddress;
 
+  // Shiprocket requires exactly 10 digits — strip country code, spaces, dashes
+  const phone10 = addr.phone.replace(/\D/g, "").slice(-10);
+
   const payload = {
     order_id: order.orderId,
     order_date: order.createdAt.toISOString().split("T")[0],
@@ -141,7 +144,7 @@ export const createShiprocketShipment = async (orderId) => {
     billing_state: addr.state,
     billing_country: "India",
     billing_email: addr.email,
-    billing_phone: addr.phone,
+    billing_phone: phone10,
     shipping_is_billing: true,
     order_items: order.items.map((item) => ({
       name: item.name,
@@ -150,7 +153,7 @@ export const createShiprocketShipment = async (orderId) => {
       selling_price: item.price,
     })),
     payment_method: "Prepaid",
-    sub_total: order.total,
+    sub_total: order.subtotal,   // product value only — not inflated by shipping/GST
     length: 10,
     breadth: 10,
     height: 10,
