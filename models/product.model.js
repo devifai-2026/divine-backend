@@ -14,6 +14,7 @@ const crystalSchema = new mongoose.Schema({
 
 const productSchema = new mongoose.Schema({
   name: { type: String, required: true, trim: true },
+  slug: { type: String, trim: true, lowercase: true },
   category: { type: String, required: true, trim: true },
   subCategory: { type: String, default: "", trim: true },
   price: { type: Number, required: true, min: 0 },
@@ -55,8 +56,16 @@ const productSchema = new mongoose.Schema({
   stock: { type: Number, default: 0, min: 0 },
   isActive: { type: Boolean, default: true },
   crystals: [crystalSchema],
+  // SEO fields
+  meta_title: { type: String, default: "", trim: true, maxlength: 60 },
+  meta_description: { type: String, default: "", trim: true, maxlength: 160 },
+  canonical_url: { type: String, default: "", trim: true },
+  og_title: { type: String, default: "", trim: true },
+  og_description: { type: String, default: "", trim: true },
+  og_image: { type: String, default: "", trim: true },
 }, { timestamps: true });
 
+productSchema.index({ slug: 1 }, { unique: true, sparse: true });
 productSchema.index({ name: "text", description: "text", category: "text" });
 productSchema.index({ category: 1 });
 productSchema.index({ subCategory: 1 });

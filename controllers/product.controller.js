@@ -1,8 +1,12 @@
 import Product from "../models/product.model.js";
+import Redirect from "../models/redirect.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import handleMongoErrors from "../utils/mongooseError.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import { slugify, uniqueSlug } from "../utils/slugify.js";
+
+const OBJECT_ID_RE = /^[a-f\d]{24}$/i;
 
 // Parse arrays sent as "key" or "key[]" from multipart FormData
 const extractArray = (body, key) => {
@@ -127,6 +131,33 @@ export const getProductById = asyncHandler(async (req, res) => {
   return res.status(200).json(new ApiResponse(200, { product }, "Product fetched successfully"));
 });
 
+// GET /api/products/slug/:slug
+export const getProductBySlug = asyncHandler(async (req, res) => {
+  const { slug } = req.params;
+
+  // Support legacy /:id URLs — if param looks like a MongoDB ObjectId, fall through to ID lookup
+  if (OBJECT_ID_RE.test(slug)) {
+    const product = await Product.findById(slug);
+    if (!product) return res.status(404).json(new ApiResponse(404, null, "Product not found"));
+    return res.status(200).json(new ApiResponse(200, { product }, "Product fetched successfully"));
+  }
+
+  let product = await Product.findOne({ slug, isActive: true });
+
+  if (!product) {
+    // Check 301 redirect table
+    const redirect = await Redirect.findOne({ from: `/product/${slug}` });
+    if (redirect) {
+      return res.status(redirect.statusCode).json(
+        new ApiResponse(redirect.statusCode, { redirectTo: redirect.to }, "Redirect")
+      );
+    }
+    return res.status(404).json(new ApiResponse(404, null, "Product not found"));
+  }
+
+  return res.status(200).json(new ApiResponse(200, { product }, "Product fetched successfully"));
+});
+
 // GET /api/products/:id/related
 export const getRelatedProducts = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
@@ -185,6 +216,13 @@ export const createProduct = asyncHandler(async (req, res) => {
 
     if (data.crystals && typeof data.crystals === "string") {
       try { data.crystals = JSON.parse(data.crystals); } catch { data.crystals = []; }
+    }
+
+    // Auto-generate slug from name if not provided
+    if (!data.slug && data.name) {
+      data.slug = await uniqueSlug(slugify(data.name), Product);
+    } else if (data.slug) {
+      data.slug = await uniqueSlug(slugify(data.slug), Product);
     }
 
     const product = await Product.create(data);
@@ -247,6 +285,21 @@ export const updateProduct = asyncHandler(async (req, res) => {
       try { data.crystals = JSON.parse(data.crystals); } catch { data.crystals = []; }
     }
 
+    // Slug handling on update
+    const existing = await Product.findById(req.params.id).select("slug name").lean();
+    if (!existing) {
+      return res.status(404).json(new ApiResponse(404, null, "Product not found"));
+    }
+
+    const oldSlug = existing.slug;
+
+    if (data.slug) {
+      data.slug = await uniqueSlug(slugify(data.slug), Product, req.params.id);
+    } else if (data.name && data.name !== existing.name && !data.slug) {
+      // Name changed but no explicit slug provided — regenerate
+      data.slug = await uniqueSlug(slugify(data.name), Product, req.params.id);
+    }
+
     const product = await Product.findByIdAndUpdate(req.params.id, data, {
       new: true,
       runValidators: true,
@@ -254,6 +307,15 @@ export const updateProduct = asyncHandler(async (req, res) => {
 
     if (!product) {
       return res.status(404).json(new ApiResponse(404, null, "Product not found"));
+    }
+
+    // If slug changed, create a 301 redirect from old slug to new slug
+    if (oldSlug && product.slug && oldSlug !== product.slug) {
+      await Redirect.findOneAndUpdate(
+        { from: `/product/${oldSlug}` },
+        { from: `/product/${oldSlug}`, to: `/product/${product.slug}`, statusCode: 301, reason: "Slug changed" },
+        { upsert: true }
+      );
     }
 
     return res.status(200).json(new ApiResponse(200, { product }, "Product updated successfully"));

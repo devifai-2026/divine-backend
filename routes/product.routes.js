@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   getProducts,
   getProductById,
+  getProductBySlug,
   getRelatedProducts,
   createProduct,
   updateProduct,
@@ -15,6 +16,7 @@ import { upload } from "../middlewares/multer.middleware.js";
 const router = Router();
 
 router.get("/", getProducts);
+router.get("/slug/:slug", getProductBySlug);
 router.get("/:id", getProductById);
 router.get("/:id/related", getRelatedProducts);
 router.post("/:id/reviews", verifyJWT, addReview);
