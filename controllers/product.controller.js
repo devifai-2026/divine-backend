@@ -28,7 +28,7 @@ export const getProducts = asyncHandler(async (req, res) => {
       isEnergized,
       isTrending,
       isBestseller,
-      isFreshArrival,
+      isBraceletCollection,
       isFlashDeal,
       purpose,
       rashi,
@@ -51,7 +51,7 @@ export const getProducts = asyncHandler(async (req, res) => {
     if (isEnergized === "false") filter.isEnergized = false;
     if (isTrending === "true") filter.isTrending = true;
     if (isBestseller === "true") filter.isBestseller = true;
-    if (isFreshArrival === "true") filter.isFreshArrival = true;
+    if (isBraceletCollection === "true") filter.isBraceletCollection = true;
     if (isFlashDeal === "true") filter.isFlashDeal = true;
 
     // Array fields — support repeated query params or comma-separated

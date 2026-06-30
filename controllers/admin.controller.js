@@ -239,7 +239,7 @@ export const exportProducts = asyncHandler(async (req, res) => {
 
   const products = await Product.find(filter)
     .sort({ createdAt: -1 })
-    .select("name category subCategory price originalPrice gstRate hsnCode stock stockStatus isActive isEnergized isTrending isBestseller isFreshArrival material size collection createdAt");
+    .select("name category subCategory price originalPrice gstRate hsnCode stock stockStatus isActive isEnergized isTrending isBestseller isBraceletCollection material size collection createdAt");
 
   return res.status(200).json(
     new ApiResponse(200, { products }, "Export data fetched")

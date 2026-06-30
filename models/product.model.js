@@ -37,7 +37,9 @@ const productSchema = new mongoose.Schema({
   size: { type: String, default: "" },
   isTrending: { type: Boolean, default: false },
   isBestseller: { type: Boolean, default: false },
-  isFreshArrival: { type: Boolean, default: false },
+  isBraceletCollection: { type: Boolean, default: false },
+  isPyramidCollection: { type: Boolean, default: false },
+  isDomTreeCollection: { type: Boolean, default: false },
   isFlashDeal: { type: Boolean, default: false },
   flashDealDiscount: { type: Number, default: 0, min: 0, max: 100 },
   flashDealEndsAt: { type: Date },
@@ -74,7 +76,9 @@ productSchema.index({ rating: -1 });
 productSchema.index({ isEnergized: 1 });
 productSchema.index({ isTrending: 1 });
 productSchema.index({ isBestseller: 1 });
-productSchema.index({ isFreshArrival: 1 });
+productSchema.index({ isBraceletCollection: 1 });
+productSchema.index({ isPyramidCollection: 1 });
+productSchema.index({ isDomTreeCollection: 1 });
 productSchema.index({ isFlashDeal: 1 });
 productSchema.index({ stockStatus: 1 });
 productSchema.index({ collection: 1 });

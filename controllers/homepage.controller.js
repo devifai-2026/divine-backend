@@ -24,8 +24,10 @@ export const getHomepage = asyncHandler(async (req, res) => {
     collections,
     purposes,
     rashis,
-    freshArrivals,
+    braceletCollection,
     trending,
+    pyramidCollection,
+    domTreeCollection,
     festivals,
     blogPosts,
     featuredBundle,
@@ -43,9 +45,9 @@ export const getHomepage = asyncHandler(async (req, res) => {
     ]),
     Purpose.find({ isActive: true }).sort({ order: 1 }),
     Rashi.find({ isActive: true }).sort({ order: 1 }),
-    // Fresh Arrivals: products tagged isFreshArrival from admin Premium Configuration
-    Product.find({ isActive: true, isFreshArrival: true })
-      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller isFreshArrival")
+    // Bracelet Collection: products tagged isBraceletCollection from admin Premium Configuration
+    Product.find({ isActive: true, isBraceletCollection: true })
+      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller isBraceletCollection")
       .sort({ createdAt: -1 })
       .limit(8),
     // Trending Artifacts: prefer isTrending-flagged products, fall back to top-rated
@@ -56,6 +58,16 @@ export const getHomepage = asyncHandler(async (req, res) => {
       { $limit: 4 },
       { $project: PRODUCT_PROJECT },
     ]),
+    // Crystora Pyramid Collection: isPyramidCollection-flagged products
+    Product.find({ isActive: true, isPyramidCollection: true })
+      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller")
+      .sort({ createdAt: -1 })
+      .limit(8),
+    // Crystora Dom Tree Collection: isDomTreeCollection-flagged products
+    Product.find({ isActive: true, isDomTreeCollection: true })
+      .select("name image price originalPrice rating reviewCount benefit energyLevel isEnergized material size stockStatus isTrending isBestseller")
+      .sort({ createdAt: -1 })
+      .limit(8),
     Festival.find({ isActive: true }),
     BlogPost.find({ isActive: true }).limit(6),
     FeaturedBundle.findOne({ isActive: true }),
@@ -75,8 +87,10 @@ export const getHomepage = asyncHandler(async (req, res) => {
         collections,
         purposes,
         rashis,
-        freshArrivals,
+        braceletCollection,
         trending,
+        pyramidCollection,
+        domTreeCollection,
         festivals,
         blogPosts,
         featuredBundle,
