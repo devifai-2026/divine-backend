@@ -11,6 +11,7 @@ const blogPostSchema = new mongoose.Schema({
   author: { type: String, default: "Crystaura", trim: true },
   datePublished: { type: Date },
   dateModified: { type: Date },
+  taggedProduct: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', default: null },
   isActive: { type: Boolean, default: true },
   // SEO fields
   meta_title: { type: String, default: "", trim: true, maxlength: 60 },
