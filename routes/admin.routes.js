@@ -15,7 +15,7 @@ import {
   deleteReview,
 } from "../controllers/admin.controller.js";
 import { getAdminShipmentStatus, adminTrackByAwb, cancelShipment } from "../controllers/shipping.controller.js";
-import { getSettings, updateShiprocketSettings, updateShippingSettings } from "../controllers/settings.controller.js";
+import { getSettings, updateShiprocketSettings, updateShippingSettings, getPageSeo, updatePageSeo } from "../controllers/settings.controller.js";
 import {
   listHeroSlides, createHeroSlide, updateHeroSlide, deleteHeroSlide,
   listPurposes, createPurpose, updatePurpose, deletePurpose,
@@ -110,5 +110,7 @@ router.patch("/homepage/flash-deals/:id", updateFlashDeal);
 router.get("/settings", getSettings);
 router.patch("/settings/shiprocket", updateShiprocketSettings);
 router.patch("/settings/shipping", updateShippingSettings);
+router.get("/settings/page-seo", getPageSeo);
+router.patch("/settings/page-seo", updatePageSeo);
 
 export default router;

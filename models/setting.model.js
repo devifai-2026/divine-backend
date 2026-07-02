@@ -11,6 +11,14 @@ const settingSchema = new mongoose.Schema({
     charge:        { type: Number, default: 150 },
     gstPercent:    { type: Number, default: 18 },
   },
+  pageSeo: {
+    type: Map,
+    of: new mongoose.Schema({
+      title:       { type: String, default: "" },
+      description: { type: String, default: "" },
+    }, { _id: false }),
+    default: {},
+  },
 }, { timestamps: true });
 
 const Setting = mongoose.model("Setting", settingSchema);

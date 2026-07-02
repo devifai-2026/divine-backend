@@ -6,8 +6,10 @@ import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
 import BlogPost from "../models/blogPost.model.js";
 import Redirect from "../models/redirect.model.js";
+import Setting from "../models/setting.model.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { STATIC_PAGES } from "../constants/staticPages.js";
 import {
   generateProductSchema,
   generateArticleSchema,
@@ -24,6 +26,20 @@ const DEFAULT_META = {
     "Discover authentic spiritual products — crystals, rudraksha, yantras, and sacred items energized with Vedic rituals.",
   image: `${BASE_URL}/og-default.jpg`,
 };
+
+// Admin-editable overrides (Settings > Page SEO) layered on top of the STATIC_PAGES defaults.
+async function getStaticPageMeta(pagePath) {
+  const page = STATIC_PAGES.find((p) => p.path === pagePath);
+  if (!page) return null;
+
+  const setting = await Setting.findOne().lean();
+  const override = setting?.pageSeo?.[pagePath];
+
+  return {
+    title: override?.title || page.defaultTitle,
+    description: override?.description || page.defaultDescription,
+  };
+}
 
 // ─── Sitemap ────────────────────────────────────────────────────────────────
 
@@ -202,20 +218,7 @@ export const getSeoMeta = asyncHandler(async (req, res) => {
   }
 
   // Default / static pages
-  const staticMeta = {
-    "/": {
-      title: "Crystaura — Sacred Spiritual Products",
-      description: "Discover authentic crystals, rudraksha, yantras & sacred items energized with Vedic rituals.",
-    },
-    "/shop": {
-      title: "Shop Spiritual Products | Crystaura",
-      description: "Browse our full collection of spiritual products — crystals, malas, yantras, and more.",
-    },
-    "/privacy-policy": { title: "Privacy Policy | Crystaura", description: DEFAULT_META.description },
-    "/terms": { title: "Terms & Conditions | Crystaura", description: DEFAULT_META.description },
-  };
-
-  const meta = staticMeta[pagePath] || {
+  const meta = (await getStaticPageMeta(pagePath)) || {
     title: DEFAULT_META.title,
     description: DEFAULT_META.description,
   };
@@ -370,6 +373,23 @@ export const serveWithMeta = asyncHandler(async (req, res) => {
               { name: post.title, path: `/blog/${post.slug}` },
             ]),
           ],
+        };
+      }
+    } else {
+      const pageMeta = await getStaticPageMeta(req.path);
+      if (pageMeta) {
+        metaPayload = {
+          title: pageMeta.title,
+          description: pageMeta.description,
+          canonical: `${BASE_URL}${req.path}`,
+          og: {
+            title: pageMeta.title,
+            description: pageMeta.description,
+            image: DEFAULT_META.image,
+            url: `${BASE_URL}${req.path}`,
+            type: "website",
+          },
+          jsonLd: null,
         };
       }
     }
